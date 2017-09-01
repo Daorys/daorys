@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CHAT</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Dogs and Cats</h1>
+    </div>
+    <div class="container">
+        <div class="jumbotron">
+            <form class="form-horizontal" action="/login" method="post" role="form">
+                {% module xsrf_form_html() %}
+                {% if message %}
+                <label><span style="color:red">Incorrect Username or Password</span></label>
+                {% end %}
+                <div class="form-group">
+                    <label>Username: </label>
+                    <input type="text" name="username">
+                </div>
+                <div class="form-group">
+                    <label>Password: </label>
+                    <input type="password" name="password">
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-default">Login</button>
+                </div>
+            </form>
+            <form class="form-horizontal" action="/register" method="get" role="form">
+                <label>Don't have account yet?</label>
+                <button type="submit" class="btn btn-default btn-sm">Sign Up</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
