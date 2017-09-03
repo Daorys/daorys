@@ -5,9 +5,12 @@ import tornado.ioloop
 import tornado.web
 from tornado.web import StaticFileHandler
 
+dbusername = "daorys_rw"
+dbpw = "somepw"
 
-client = MongoClient('localhost', 27017)
-db = client.CHAT
+client = pymongo.MongoClient('127.0.0.1',27017)
+db = client.daorys
+db.authenticate(dbusername,dbpw)
 users_coll = db.users
 messages_coll = db.messages
 
