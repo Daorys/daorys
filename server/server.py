@@ -50,8 +50,9 @@ class Login(BaseHandler):
 
     def verify(self, username, password):
         record = users_coll.find_one({'username':username})
-        if password == record.get('password'):
-            return True
+        if record:
+            if password == record.get('password'):
+                return True
         return False
 
 
@@ -79,7 +80,7 @@ class Register(BaseHandler):
             'password': password,
             'email': email
         })
-        self.redirect('/messages?u=%s' % username)
+        self.redirect('/login')
 
     def check_availability(self, username):
         record = users_coll.find_one({'username':username})
@@ -103,7 +104,11 @@ class PostMessage(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         target_user = self.get_query_argument('search_user', None)
-        self.render('initiate.html', receiver=target_user)
+        record = users_coll.find_one({'username':target_user})
+        if record:
+            self.render('initiate.html', receiver=target_user)
+        else:
+            self.write('no such receiver user!')
 
     @tornado.web.authenticated
     def post(self):
