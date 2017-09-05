@@ -114,6 +114,21 @@ class Messages(BaseHandler):
             initiated_chats.append(chat)
         return initiated_chats
 
+    def get_nym_chats(self,username):
+        a = messages_coll.find({"receiver":username})
+        nym_chats = []
+        for b in a:
+            other_party = b.get('initiator_mask')
+            chat = conversation(other_party)
+            chat.msgs = []
+            for message in b.get('messages'):
+                if message.get("type") == 1:
+                    chat.msgs.append(other_party+": "+message.get('content'))
+                else:
+                    chat.msgs.append("You: "+message.get('content'))
+            nym_chats.append(chat)
+        return nym_chats
+
     def get(self):
         username = self.get_query_argument('u', None)
         logged_username = self.current_user
@@ -121,7 +136,8 @@ class Messages(BaseHandler):
             self.write('Not authorized')
             return
         initiated_chats = self.get_initiated_chats(username)
-        self.render('messages.html', username=username,initiated_chats=initiated_chats)
+        nym_chats = self.get_nym_chats(username)
+        self.render('messages.html', username=username,initiated_chats=initiated_chats,nym_chats=nym_chats)
 
 class PostMessage(BaseHandler):
     @tornado.web.authenticated
@@ -160,17 +176,18 @@ class PostMessage(BaseHandler):
                         {'$and': [{"receiver":receiver}, {"initiator":sender}]},
                         {'$addToSet': {'messages': {'content': message, 'type': 1, 'timestamp': timestamp}}}
                 )
+            self.redirect('/messages?u={}#initiated_chats'.format(sender))
         elif receiver_mask:
             record = messages_coll.find_one({'$and': [{"initiator_mask":receiver_mask},{"receiver":sender}]})
             messages_coll.update(
                     {'$and': [{"initiator_mask":receiver_mask},{"receiver":sender}]},
                     {'$addToSet': {'messages': {'content': message, 'type': 2, 'timestamp': timestamp}}}
             )
-        self.write('Send message %s to %s from %s' % (message, receiver, sender))
+            self.redirect('/messages?u={}#nym_chats'.format(sender))
 
 settings = {
     'cookie_secret': 'Mysecret',
-    'login_url': '/login',
+    'login_url': '/messages',
     'xsrf_cookies': False,
 }
 
