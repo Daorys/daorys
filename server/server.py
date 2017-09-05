@@ -4,6 +4,10 @@ import time
 import tornado.ioloop
 import tornado.web
 from tornado.web import StaticFileHandler
+import string
+import random
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
 
 dbusername = "daorys_rw"
 dbpw = "somepw"
@@ -88,17 +92,36 @@ class Register(BaseHandler):
             return False
         else:
             return True
+class conversation:
+    msgs = []
+    def __init__(self,other_party):
+        self.other_party=other_party
 
 
 class Messages(BaseHandler):
+    def get_initiated_chats(self,username):
+        a = messages_coll.find({"initiator":username})
+        initiated_chats = []
+        for b in a:
+            other_party = b.get('receiver')
+            chat = conversation(other_party)
+            chat.msgs = []
+            for message in b.get('messages'):
+                if message.get("type") == 1:
+                    chat.msgs.append("You: "+message.get('content'))
+                else:
+                    chat.msgs.append(other_party+": "+message.get('content'))
+            initiated_chats.append(chat)
+        return initiated_chats
+
     def get(self):
         username = self.get_query_argument('u', None)
         logged_username = self.current_user
         if not logged_username or logged_username != username:
             self.write('Not authorized')
             return
-        self.render('messages.html', username=username)
-
+        initiated_chats = self.get_initiated_chats(username)
+        self.render('messages.html', username=username,initiated_chats=initiated_chats)
 
 class PostMessage(BaseHandler):
     @tornado.web.authenticated
@@ -108,34 +131,47 @@ class PostMessage(BaseHandler):
         if record:
             self.render('initiate.html', receiver=target_user)
         else:
-            self.write('no such receiver user!')
+            record_mask = messages_coll.find_one({'initiator_mask':target_user})
+            if record_mask:
+                self.render('initiate.html',receiver=None,receiver_mask=target_user)
+            else:
+                self.write('no such receiver user!')
 
     @tornado.web.authenticated
     def post(self):
         message = self.get_body_argument('comment', None)
+        #print message, receiver, receiver_mask, sender
         receiver = self.get_body_argument('receiver', None)
+        receiver_mask = self.get_body_argument('receiver_mask', None)
         sender = self.current_user
         timestamp = time.time()
-        record = messages_coll.find_one({'$and': [{'receiver':receiver}, {'sender': sender}]})
-        if not record:
-            messages_coll.insert({
-                'receiver': receiver,
-                'sender': sender,
-                'messages': [{'content': message, 'sender': sender, 'timestamp': timestamp}]
-            })
-
-        else:
+        if receiver:
+            record = messages_coll.find_one({'$and': [{"receiver":receiver}, {"initiator":sender}]})
+            if not record:
+                random_string = id_generator()
+                messages_coll.insert({
+                    "receiver":receiver,
+                    "initiator":sender,
+                    "initiator_mask":random_string,
+                    'messages': [{'content': message, 'type': 1, 'timestamp': timestamp}]
+                })
+            else:
+                messages_coll.update(
+                        {'$and': [{"receiver":receiver}, {"initiator":sender}]},
+                        {'$addToSet': {'messages': {'content': message, 'type': 1, 'timestamp': timestamp}}}
+                )
+        elif receiver_mask:
+            record = messages_coll.find_one({'$and': [{"initiator_mask":receiver_mask},{"receiver":sender}]})
             messages_coll.update(
-                {'$and': [{'receiver': receiver}, {'sender': sender}]},
-                {'$addToSet': {'messages': {'content': message, 'sender': sender, 'timestamp': timestamp}}}
+                    {'$and': [{"initiator_mask":receiver_mask},{"receiver":sender}]},
+                    {'$addToSet': {'messages': {'content': message, 'type': 2, 'timestamp': timestamp}}}
             )
-
         self.write('Send message %s to %s from %s' % (message, receiver, sender))
 
 settings = {
     'cookie_secret': 'Mysecret',
     'login_url': '/login',
-    'xsrf_cookies': True,
+    'xsrf_cookies': False,
 }
 
 
@@ -152,5 +188,5 @@ def make_app():
 
 if __name__ == "__main__":
     app = make_app()
-    app.listen(8888)
+    app.listen(8000)
     tornado.ioloop.IOLoop.current().start()

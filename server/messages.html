@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>daorys</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -24,6 +26,37 @@
                 <button type="submit" class="btn btn-default btn-sm">Search User</button>
             </form>
         </div>
+    </div>
+    <div class="conatiner">
+	<div class="jumbotron">
+	    <h2 class="text-center">Your initiated chats</h2>
+	    <ul class="nav nav-tabs">
+		    {% if len(initiated_chats) > 0 %}
+		    <li class="active"><a data-toggle="tab" href="#{{ initiated_chats[0].other_party }}">{{ initiated_chats[0].other_party }}</a></li>
+		    {% for chat in initiated_chats[1:] %}
+		    <li><a data-toggle="tab" href="#{{ chat.other_party }}">{{ chat.other_party }}</a></li>
+		    {% end %}
+		    {% end %}
+            </ul>
+	    <div class="tab-content">
+		    {% if len(initiated_chats) > 0 %}
+		    <div id="{{ initiated_chats[0].other_party }}" class="tab-pane fade in active">
+			    <h3>{{ initiated_chats[0].other_party }}</h3>
+			    {% for message in initiated_chats[0].msgs %}
+			    <p>{{ message }}</p>
+			    {% end %}
+		    </div>
+		    {% for chat in initiated_chats[1:] %}
+		    <div id="{{ chat.other_party }}" class="tab-pane fade">
+			    <h3>{{ chat.other_party }}</h3>
+			    {% for message in chat.msgs %}
+			    <p>{{ message }}</p>
+			    {% end %}
+		    </div>
+		    {% end %}
+		    {% end %}
+	    </div>
+	</div>
     </div>
 </body>
 </html>

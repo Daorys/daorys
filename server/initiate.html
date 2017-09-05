@@ -11,15 +11,26 @@
     </div>
     <div class="container">
         <div class="jumbotron">
+            {% module xsrf_form_html() %}
+            {% if receiver %}
             <div class="container">
-                <h4 class="text-center">Initiate anonymous chat with {{ receiver }} </h4>
+                <h4 class="text-center">anonnymous chat with {{ receiver }} </h4>
             </div>
             <form class="form-horizontal" action="/post" method="post" role="form">
-                {% module xsrf_form_html() %}
                 <textarea class="form-control" rows="5" name="comment"></textarea>
                 <input type="hidden" name="receiver" value="{{ receiver }}">
                 <button type="submit" class="btn btn-default">Send</button>
             </form>
+	    {% elif receiver_mask %}
+            <div class="container">
+                <h4 class="text-center">chat with masked user {{ receiver_mask }} </h4>
+            </div>
+            <form class="form-horizontal" action="/post" method="post" role="form">
+                <textarea class="form-control" rows="5" name="comment"></textarea>
+                <input type="hidden" name="receiver_mask" value="{{ receiver_mask }}">
+                <button type="submit" class="btn btn-default">Send</button>
+            </form>
+            {% end %}
         </div>
     </div>
 </body>
